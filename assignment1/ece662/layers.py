@@ -28,7 +28,17 @@ def affine_forward(x, w, b):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # The first line  of code counts how many examples we have because we don't know
+    # how many there are since  (N, d_1, ..., d_k). 
+    N = x.shape[0]
+
+    # The second line of code reshapes all the example into rows so its easier to handle
+    # so now each peice of data is one long row of data
+    row = x.reshape(N, -1)
+
+    # The third line of code push the data through the layer of the model, these are weights
+    # and biases that will be learned and updated during the training process of the model 
+    out = row.dot(w) + b
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -60,8 +70,21 @@ def affine_backward(dout, cache):
     # TODO: Implement the affine backward pass.                               #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    
+    # Reshapes the array for the full size of the data because how many there are since  (N, d_1, ..., d_k). 
+    N = x.shape[0]
 
-    pass
+    #Reshapes the data into rows so its streched out and easier to handle
+    row = x.reshape(N,-1)
+
+    #Calcualtes the graident by getting the transpose of the weights and dotting it with the dx
+    dx = dout.dot(w.T).reshape(x.shape)
+
+    # Gets the graident descent value by transposingthe rows and dotting it with dout 
+    dw = row.T.dot(dout)
+
+    # this allows to get the biased becasuse it sums the dout values along the axis
+    db = np.sum(dout, axis=0)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
