@@ -139,7 +139,7 @@ def relu_backward(dout, cache):
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     # Looks through all the x values and if greater than 0 it will keep the dout value
-    dx = dout * x > 0
+    dx = dout * (x > 0)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
