@@ -218,6 +218,23 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # might prove to be helpful.                                          #
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        sample_mean = np.mean(x, axis=0)
+        sample_var = np.var(x, axis=0)
+
+        #normalizing
+        std = np.sqrt(sample_var + eps)
+        x_hat = (x - sample_mean) / std
+        
+        #scale,shift,update mean and var
+        out = gamma*x_hat + beta
+
+        running_mean = momentum*running_mean + (1.0 - momentum)*sample_mean
+        running_var = momentum*running_var + (1.0 - momentum)*sample_var
+        
+
+        #caching for next function, backward
+        cache = (x, x_hat, sample_mean, sample_var, eps, gamma, beta)
+
 
         pass
 
@@ -233,7 +250,11 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # Store the result in the out variable.                               #
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        std = np.sqrt(running_var+eps)
+        x_hat = (x - running_mean) / std
+        out = gamma*x_hat + beta
 
+        cache = None
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -276,6 +297,28 @@ def batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    #read cache from batchnorm_forward run previously 
+    x, x_hat, mu, var, eps, gamma, beta = cache
+    N, D = x.shape
+
+    #Gradients for parameters
+    dbeta  = np.sum(dout, axis=0)
+    dgamma = np.sum(dout*x_hat, axis=0)
+
+    #Gradient flow and inverse std
+    dxhat = dout * gamma
+    ivar  = 1.0/np.sqrt(var+eps)
+    xmu = x-mu #centered inputs
+
+    #gradient variance and mean 
+    dvar = np.sum(dxhat*xmu, axis=0)*-0.5*(var + eps)**(-3/2)
+    dmu = np.sum(dxhat*-ivar, axis=0) + dvar*np.mean(-2.0*xmu, axis=0)
+
+    dx = dxhat*ivar + dvar*(2.0/N)*xmu + dmu/N
+    
+
+
+
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -310,6 +353,21 @@ def batchnorm_backward_alt(dout, cache):
     # single statement; our implementation fits on a single 80-character line.#
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    
+    #read cache from batchnorm_forward run previously 
+    x, x_hat, mu, var, eps, gamma, beta = cache
+    N, D = x.shape
+
+    #Gradients for parameters
+    dbeta  = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * x_hat, axis=0)
+
+    #Gradient flow and inverse std
+    dxhat = dout*gamma
+    ivar  = 1.0/np.sqrt(var+eps)
+
+    #simplified formula compared to batchnorm_backward
+    dx = (ivar/N)*(N*dxhat - np.sum(dxhat, axis=0) - x_hat*np.sum(dxhat*x_hat, axis=0))
 
     pass
 
