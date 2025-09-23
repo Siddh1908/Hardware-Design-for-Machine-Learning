@@ -323,8 +323,12 @@ class FullyConnectedNet(object):
                 x, bn_cache = layernorm_forward(x, gamma, beta, self.bn_params[i-1])
 
             x, relu_cache = relu_forward(x)
-            caches.append((fc_cache, relu_cache, bn_cache))
-        
+            
+            dropped = None
+            if self.use_dropout:
+                x, dropped = dropout_forward(x, self.dropout_param)
+
+            caches.append((fc_cache, relu_cache, bn_cache, dropped))        
     
         
         WL, bL = self.params['W%d' % self.num_layers], self.params['b%d' % self.num_layers]
@@ -357,29 +361,35 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        shifted = scores - np.max(scores, axis=1, keepdims=True)
-        exp_scores = np.exp(shifted)
-        probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
-        N = X.shape[0]
-        loss = -np.log(probs[np.arange(N), y]).mean()
+       # shifted = scores - np.max(scores, axis=1, keepdims=True)
+       # exp_scores = np.exp(shifted)
+       # probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+       # N = X.shape[0]
+       # loss = -np.log(probs[np.arange(N), y]).mean()
+
+        data_loss, ds = softmax_loss(scores, y)
+        loss = data_loss
 
         for i in range(1, self.num_layers + 1):
             W = self.params['W%d' % i]
             loss += 0.5 * self.reg * np.sum(W * W)
 
-
-        ds = probs
-        ds[np.arange(N), y] -= 1
-        ds /= N
+        
+       # ds = probs
+       # ds[np.arange(N), y] -= 1
+       # ds /= N
 
         dx, dW, db = affine_backward(ds, final_cache)
-        grads['W%d' % self.num_layers] = dW + self.reg * WL
+        grads['W%d' % self.num_layers] = dW + self.reg * self.params['W%d' % self.num_layers]
+       # grads['W%d' % self.num_layers] = dW + self.reg * WL
         grads['b%d' % self.num_layers] = db
 
         for i in range(self.num_layers - 1, 0, -1):
-            fc_cache, relu_cache, bn_cache = caches[i-1]
-            dx = relu_backward(dx, relu_cache)
+            fc_cache, relu_cache, bn_cache, dropout_cache = caches[i-1]
 
+            if self.use_dropout:
+                dx = dropout_backward(dx, dropout_cache)
+            dx = relu_backward(dx, relu_cache)
             if self.normalization == "batchnorm":
                 dx, dgamma, dbeta = batchnorm_backward_alt(dx, bn_cache)
                 grads['gamma%d' % i] = dgamma
@@ -392,7 +402,7 @@ class FullyConnectedNet(object):
             dx, dW, db = affine_backward(dx, fc_cache)
             grads['W%d' % i] = dW + self.reg * self.params['W%d' % i]
             grads['b%d' % i] = db
-        pass
+        
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################

@@ -236,7 +236,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         cache = (x, x_hat, sample_mean, sample_var, eps, gamma, beta)
 
 
-        pass
+        
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -319,7 +319,7 @@ def batchnorm_backward(dout, cache):
 
 
 
-    pass
+  
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -369,7 +369,7 @@ def batchnorm_backward_alt(dout, cache):
     #simplified formula compared to batchnorm_backward
     dx = (ivar/N)*(N*dxhat - np.sum(dxhat, axis=0) - x_hat*np.sum(dxhat*x_hat, axis=0))
 
-    pass
+    
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -428,7 +428,7 @@ def layernorm_forward(x, gamma, beta, ln_param):
 
     #cache the vars
     cache = (x, x_hat, mu, var, eps, gamma, beta)
-    pass
+   
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -481,8 +481,8 @@ def layernorm_backward(dout, cache):
     dxt = (inv_std/D)*(D*dxhat_t - np.sum(dxhat_t, axis=0, keepdims=True) - x_hat_t*np.sum(dxhat_t*x_hat_t, axis=0, keepdims=True))
     dx = dxt.T
 
-    return dx, dgamma, dbeta
-    pass
+    
+   
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -530,7 +530,11 @@ def dropout_forward(x, dropout_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # 1 neuron is kept, 0 neuros will be dropped
+        # we divide by p to scale the remaining neurons
+        mask = ((np.random.rand(*x.shape) < p) / p)
+        # masking input
+        out = mask * x
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -542,7 +546,8 @@ def dropout_forward(x, dropout_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # cant drop out neurons during test phase is over
+        out = x
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -573,7 +578,8 @@ def dropout_backward(dout, cache):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # mask used in foward passing to drop neurons
+        dx = mask * dout
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
