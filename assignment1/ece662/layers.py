@@ -414,7 +414,20 @@ def layernorm_forward(x, gamma, beta, ln_param):
     # the batch norm code and leave it almost unchanged?                      #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+  
+    #based on hint we will transpose x
+    xt = x.T                              
+    mu  = np.mean(xt, axis=0, keepdims=True)         
+    var = np.var(xt, axis=0, keepdims=True)        
 
+    xt_hat = (xt - mu)/np.sqrt(var + eps)        
+    x_hat  = xt_hat.T                              
+
+    #scale and shift
+    out = gamma * x_hat + beta
+
+    #cache the vars
+    cache = (x, x_hat, mu, var, eps, gamma, beta)
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -449,7 +462,26 @@ def layernorm_backward(dout, cache):
     # still apply!                                                            #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    x, x_hat, mu, var, eps, gamma, beta = cache
+    N, D = x.shape
 
+    #gradients
+    dbeta  = np.sum(dout, axis=0)          
+    dgamma = np.sum(dout * x_hat, axis=0) 
+
+  
+    dxhat = dout*gamma                   
+    inv_std = 1.0/np.sqrt(var + eps) 
+
+    dxhat_t = dxhat.T
+    x_hat_t = x_hat.T   
+
+
+
+    dxt = (inv_std/D)*(D*dxhat_t - np.sum(dxhat_t, axis=0, keepdims=True) - x_hat_t*np.sum(dxhat_t*x_hat_t, axis=0, keepdims=True))
+    dx = dxt.T
+
+    return dx, dgamma, dbeta
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
