@@ -17,8 +17,8 @@ def affine_forward(x, w, b):
     - w: A numpy array of weights, of shape (D, M)
     - b: A numpy array of biases, of shape (M,)
 
-    Returns a tuple of:
-    - out: output, of shape (N, M)
+    Returns a tuple of: 
+    - out: output, of shape (N, M) 
     - cache: (x, w, b)
     """
     out = None
