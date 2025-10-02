@@ -871,7 +871,13 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # Implement the forward pass for spatial batch normalization.
+    N, C, H, W = x.shape
+    # Reshape x to (N*H*W, C) to apply batch normalization on the channels
+    xReshaped = x.transpose(0, 2, 3, 1).reshape(-1, C)
+    # Apply batch normalization
+    outReshaped, cache = batchnorm_forward(xReshaped, gamma, beta, bn_param)
+    out = outReshaped.reshape(N, H, W, C).transpose(0, 3, 1, 2)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -905,7 +911,13 @@ def spatial_batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # Implement the backward pass for spatial batch normalization.
+    N,C,H,W = dout.shape
+    # Reshape dout to (N*H*W, C) to apply batch normalization backward on the channels
+    doutReshaped = dout.transpose(0, 2, 3, 1).reshape(-1, C)
+    # Apply batch normalization backward pass
+    dxReshaped, dgamma, dbeta = batchnorm_backward(doutReshaped, cache)
+    dx = dxReshaped.reshape(N, H, W, C).transpose(0, 3, 1, 2)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -945,7 +957,20 @@ def spatial_groupnorm_forward(x, gamma, beta, G, gn_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # Reshape x to (N*H*W, C) to apply group normalization on the channels
+    N, C, H, W = x.shape
+    xgrouped = x.reshape(N, G, C // G, H, W)
+    # Reshape to (N*G, C//G, H, W) for group normalization
+    xgrouped = xgrouped.reshape(N*G,-1)
+    # Compute mean and variance
+    mean = np.mean(xgrouped, axis=1, keepdims=True)
+    vars = np.var(xgrouped, axis=1, keepdims=True)
+    # Normalize
+    groupednormed = (xgrouped - mean) / np.sqrt(vars + eps)
+    xnorm = groupednormed.reshape(N, G, C//G, H, W).reshape(N, C, H, W)
+    out = gamma * xnorm + beta
+    # Cache values for backward pass
+    cache = (G, x, xnorm, mean, vars, beta, gamma, eps)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -974,9 +999,26 @@ def spatial_groupnorm_backward(dout, cache):
     # This will be extremely similar to the layer norm implementation.        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    
+    # Unpack cache
+    G, x, xnorm, mean, vars, gamma, beta, eps = cache
+    N, C, H, W = x.shape
+    # Gradients for parameters
+    dbeta = np.sum(dout, axis=(0, 2, 3))
+    dgamma = np.sum(dout * xnorm, axis=(0, 2, 3))
+    # Gradient flow
+    dxnorm = dout * gamma
+    # Reshape for group normalization backward pass
+    dxnorm_grouped = dxnorm.reshape(N, G, C // G, H, W).reshape(N*G, -1)
+    xgrouped = x.reshape(N, G, C // G, H, W).reshape(N*G, -1)
+    xnormgrouped = xnorm.reshape(N, G, C // G, H, W).reshape(N*G, -1)
+    # Size of each group
+    Size = C//G * H * W
 
-    pass
-
+    inv_std = 1.0/np.sqrt(vars + eps)
+    # Simplified gradient formula for group normalization
+    dxgrouped = (inv_std/Size)*(Size*dxnorm_grouped - np.sum(dxnorm_grouped, axis=1, keepdims=True) - xnormgrouped*np.sum(dxnorm_grouped*xnormgrouped, axis=1, keepdims=True))
+    dx = dxgrouped.reshape(N, G, C//G, H, W).reshape(N, C, H, W)
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
